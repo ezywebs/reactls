@@ -2,7 +2,7 @@
   "name": "rectless",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://app.ezorm.com",
+  "homepage": "https://ezywebs.github.io/reactls",
   "dependencies": {
     "firebase": "^5.7.2",
     "gh-pages": "^2.0.1",
