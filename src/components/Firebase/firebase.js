@@ -10,15 +10,6 @@ const config = {
   messagingSenderId: process.env.REACT_APP_MESSAGING_SENDER_ID,
 };
 
-// const config = {
-//   apiKey: "AIzaSyCY4oTQMcFHofcjbQn9DqhLBoXt_6hJP14",
-//   authDomain: "fir-cd7b4.firebaseapp.com",
-//   databaseURL: "https://fir-cd7b4.firebaseio.com",
-//   projectId: "fir-cd7b4",
-//   storageBucket: "fir-cd7b4.appspot.com",
-//   messagingSenderId: "910290729574",
-// };
-
 class Firebase {
   constructor() {
     app.initializeApp(config);
