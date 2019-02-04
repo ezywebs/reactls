@@ -1,0 +1,14 @@
+.ui.form{
+  font-size: 18px;
+}
+.ui.form>label{
+  padding: 20px;
+}
+.ui.card.selected {
+  border: 2px solid lightblue;
+  font-weight: bold;
+}
+.ui.card:hover{
+  cursor: pointer;
+  border: 2px solid lightblue;
+}
