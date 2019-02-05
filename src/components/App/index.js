@@ -14,6 +14,7 @@ import AccountPage from '../Account';
 import AdminPage from '../Admin';
 import Payments from '../Payments';
 import Pay from '../Pay';
+import History from '../History';
 
 import * as ROUTES from '../../constants/routes';
 import { withAuthentication } from '../Session';
@@ -32,6 +33,7 @@ const App = () => (
         <Route path={ROUTES.ADMIN} component={AdminPage} />
         <Route path={ROUTES.PAYMENTS} component={Payments} />
         <Route path={ROUTES.PAY} component={Pay} />
+        <Route path={ROUTES.HISTORY} component={History} />
       </div>
     </div>
   </Router>

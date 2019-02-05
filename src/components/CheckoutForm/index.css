@@ -5,8 +5,12 @@
   padding: 20px;
 }
 .ui.card.selected {
-  border: 2px solid lightblue;
+  border: 2px solid #2185d0;
   font-weight: bold;
+  background: #fafeff;
+}
+.ui.card.selected>.extra, .ui.cards>.card.selected>.extra{
+  color: #333;
 }
 .ui.card:hover{
   cursor: pointer;

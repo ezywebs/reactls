@@ -8,7 +8,6 @@ const stripe = require('stripe')(functions.config().stripe.testkey);
 
 exports.stripeCharge = functions.database
                                 .ref('/payments/{userId}/{paymentId}')
-                                // .onWrite(event => {
                                 .onWrite((change,context) => {
                                   const payment = change.after.val();
                                   const userId = context.params.userId;
@@ -27,7 +26,8 @@ exports.stripeCharge = functions.database
                                                 const idempotency_key = paymentId;
                                                 const source = payment.token.id;
                                                 const currency = 'usd';
-                                                const charge = {amount, currency, source};
+                                                const description = payment.description;
+                                                const charge = {amount, currency, source, description};
                                                 
                                                 return stripe.charges.create(charge, { idempotency_key });
                                               })
