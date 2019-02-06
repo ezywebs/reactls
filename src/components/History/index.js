@@ -3,6 +3,7 @@ import React, { Component } from 'react';
 import { withFirebase } from '../Firebase';
 import { withRouter } from 'react-router-dom';
 import { compose } from 'recompose';
+import { withAuthorization } from '../Session';
 
 
 class History extends Component {
@@ -34,7 +35,7 @@ class History extends Component {
   }
   
   // componentWillUnmount() {
-  //   this.props.firebase.users().off();
+  //   this.props.firebase.payments().off();
   // }
 
   render() {
@@ -50,36 +51,40 @@ class History extends Component {
 }
 
 const PaymentsList = ({ payments }) => (
-  <ul>
+  <table className="ui small striped table">
+    <thead>
+      <tr>
+        <th>Payment ID</th>
+        <th>Amount</th>
+        <th>Description</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody>
     {payments.map(payment => (
-      <li key={payment.uid}>
-        <span>
-          <strong>Payment ID:</strong> {payment.uid}
-        </span>
-        <span>
-          <strong>Amount:</strong> {payment.amount}
-        </span>
-        <span>
-          <strong>Description:</strong> {payment.description ? payment.description : "N/A"}
-        </span>
-        <span>
-           <strong>Date Created:</strong> {payment.charge ? payment.charge.created : "N/A"}
-        </span>
-      </li>
-    ))}
-  </ul>
+      <tr key={payment.uid}>
+        <td>{payment.uid}</td>
+        <td>{payment.amount}</td>
+        <td>{payment.description ? payment.description : "N/A"}</td>
+        <td>{payment.charge ? formatDate(payment.charge.created*1000).toString() : "N/A"}</td>
+      </tr>
+      ))}
+    </tbody>
+  </table>
 );
 
-export default withFirebase(History);
+const formatDate = (date) => {
+  var options = { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
+  var d  = new Date(date);
+  return d.toLocaleDateString(("en-US"), options);
+}
 
-// const exH = compose(
-//   withRouter,
-//   withFirebase,
-// )(History);
+const condition = authUser => !!authUser;
 
-// export default exH;
+const exH = compose(
+  withAuthorization(condition),
+  withRouter,
+  withFirebase,
+)(History);
 
-
-        // <span>
-        //   <strong>Date Created:</strong> {payment.charge ? new Date(payment.charge.created*1000) : "N/A"}
-        // </span>
+export default exH;

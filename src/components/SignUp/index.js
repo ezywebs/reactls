@@ -25,6 +25,7 @@ class SignUpFormBase extends Component {
     super(props);
     
     this.state = { ...INITIAL_STATE };
+    console.log(props);
   }
 
   onSubmit = event => {
