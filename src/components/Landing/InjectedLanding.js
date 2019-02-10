@@ -1,9 +1,10 @@
 import React from 'react';
 import Loading from '../Loading';
 import {injectStripe} from 'react-stripe-elements';
-// import './index.css';
+import './InjectedLanding.css';
 import CardSection from '../CardSection';
 import * as ROUTES from '../../constants/routes';
+import * as ROLES from '../../constants/roles';
 
 const INITIAL_STATE = {
   email: '',
@@ -11,8 +12,9 @@ const INITIAL_STATE = {
   passwordTwo: '',
   error: null,
   loading: false,
-  plan: "2",
-  fail: false
+  plan: '2',
+  isAdmin: false,
+  fail: false,
 };
 
 class InjectedLanding extends React.Component {
@@ -20,15 +22,17 @@ class InjectedLanding extends React.Component {
     super(props);
     this.state = { ...INITIAL_STATE };
     this.selectCard = this.selectCard.bind(this);
-    console.log(props);
   }
   
   onSubmit = event => {
     event.preventDefault();
     this.setState({loading: true});
-    const { email, passwordOne } = this.state;
+    const { email, passwordOne, isAdmin } = this.state;
+    const roles = [];
+    if (isAdmin) {
+      roles.push(ROLES.ADMIN);
+    }
     const {firebase, history} = this.props.data;
-    console.log("in submit");
     firebase
       .doCreateUserWithEmailAndPassword(email, passwordOne)
       .then(authUser => {
@@ -36,10 +40,11 @@ class InjectedLanding extends React.Component {
           .user(authUser.user.uid)
           .set({
             email,
+            roles,
           });
           this.setState({fail: false});
           
-          let amount = "0";
+          let amount = '0';
           let description = "";
           switch(this.state.plan) {
             case "1":
@@ -50,24 +55,15 @@ class InjectedLanding extends React.Component {
               amount="500000";description="SEO Platinum Plan";
           }
 
-          console.log("bafore stripe");
           this.props.stripe.createToken({email: this.state.email}).then(({token}) => {
-            console.log('Received Stripe token:', token);
-            // this.setState({loading: false});
             const uid = authUser.user.uid;
             console.log('UID:', uid);
             firebase.payment(uid).push({token, amount, description})
                                 .then((snap) => {
                                     const key = snap.key;
-                                    console.log("key="+key);
                                     firebase.payment(`${uid}/${key}/charge/captured`).on('value', snap => {
                                         if (snap.val()) {
-                                            history.push(ROUTES.HISTORY);
-                                            // this.setState({
-                                            //     // stripeLoading: false,
-                                            //     loading: false,
-                                            //     ...INITIAL_STATE,
-                                            // });
+                                          history.push(ROUTES.HISTORY);
                                         }
                                     });
                                 });
@@ -77,70 +73,19 @@ class InjectedLanding extends React.Component {
               fail: true, 
               loading: false,
             });
+            history.push(ROUTES.PAY);
           });
       })
-      // .then(() => {
-      //   console.log("mid step");
-      // })
-      // .then(() => {
-      //   console.log("after user created:" + this.props);
-          
-      //   this.setState({ ...INITIAL_STATE });
-      //   this.props.history.push(ROUTES.HOME);
-      // })
       .catch(error => {
-        console.log("error creating user:"+error)
         this.setState({
           fail: true, 
           loading: false,
-          // error: error,
           email: '',
           passwordOne: '',
           passwordTwo: ''
         });
       });
   }
-  
-  // handleSubmit = (ev) => {
-  //   this.setState({fail: false});
-  //   const {firebase, history} = this.props.data;
-  //   // We don't want to let default form submission happen here, which would refresh the page.
-  //   ev.preventDefault();
-  //   this.setState({loading: true});
-  //   let amount = "0";
-  //   let description = "";
-  //   switch(this.state.plan) {
-  //   case "1":
-  //     amount="100000";description="SEO Silver Plan";break;
-  //   case "2":
-  //     amount="250000";description="SEO Gold Plan";break;
-  //   case "3":
-  //     amount="500000";description="SEO Platinum Plan";
-  //   }
-  //   // Within the context of `Elements`, this call to createToken knows which Element to
-  //   // tokenize, since there's only one in this group.
-  //   this.props.stripe.createToken({email: firebase.auth.currentUser.email}).then(({token}) => {
-  //     console.log('Received Stripe token:', token);
-  //     this.setState({loading: false});
-  //     const uid = firebase.auth.currentUser.uid;
-  //     firebase.payment(uid).push({token, amount, description})
-  //                         .then((snap) => {
-  //                             const key = snap.key;
-  //                             firebase.payment(`${uid}/${key}/charge/captured`).on('value', snap => {
-  //                                 if (snap.val()) {
-  //                                     this.setState({
-  //                                         stripeLoading: false,
-  //                                         loading: false
-  //                                     });
-  //                                     history.push(ROUTES.HISTORY);
-  //                                 }
-  //                             });
-  //                         });
-  //   })
-  //   .catch(err => {
-  //     this.setState({fail: true});
-  //   });
-  // };
   
   selectCard = (e) => {
     this.setState({plan: e.currentTarget.dataset.id});
@@ -149,24 +94,39 @@ class InjectedLanding extends React.Component {
   onChange = event => {
     this.setState({ [event.target.name]: event.target.value });
   };
+  
+  // componentDidMount = () => {
+  //   console.log("auth" + this.props.data.firebase.auth);
+  //   console.log("cUser" + this.props.data.firebase.auth.currentUser);
+  //   if (this.props.data.firebase.auth && this.props.data.firebase.auth.currentUser) {
+  //     console.log("redirect to pay");
+  //     this.props.history.push(ROUTES.PAY);
+  //   }
+  // }
 
   render() {
     const {
       email,
       passwordOne,
       passwordTwo,
-      error,
+      error
     } = this.state;
+    const notEqualPasswords =  passwordOne !== passwordTwo && passwordOne !== '' && passwordTwo !== '';
+    const invalidEmail = testEmail(email) && email !== '';
     const isInvalid =
       passwordOne !== passwordTwo ||
       passwordOne === '' ||
-      email === '';
+      email === '' || invalidEmail;
     const btnClass = "ui primary button " + (this.state.loading ? "loading" : "");
     return (
       <div>
         {this.state.fail ? error : ""}
-        <form onSubmit={this.onSubmit} className={this.state.loading ? "ui form loading" : "ui form fluid segment"}>
-          <div className="field">
+        <form onSubmit={this.onSubmit} className={this.state.loading ? "ui form loading" : "ui form fluid attached segment"}>
+          <h4 className="ui horizontal divider header" style={{marginTop: '25px'}}>
+            <i className="user plus icon"></i>
+            Step 1: Create account
+          </h4>
+          <div className={invalidEmail ? "field error" : "field"}>
             <label>Email</label>
             <input
               name="email"
@@ -176,7 +136,7 @@ class InjectedLanding extends React.Component {
               placeholder="Email Address"
             />
           </div>
-          <div className="field">
+          <div className={notEqualPasswords ? "field error" : "field"}>
             <label>Password</label>
             <input
               name="passwordOne"
@@ -186,7 +146,7 @@ class InjectedLanding extends React.Component {
               placeholder="Password"
             />
           </div>
-          <div className="field">
+          <div className={notEqualPasswords ? "field error" : "field"}>
             <label>Confirm Password</label>
             <input
               name="passwordTwo"
@@ -196,16 +156,15 @@ class InjectedLanding extends React.Component {
               placeholder="Confirm Password"
             />
           </div>
-          <h2 className="ui header center aligned">Place Order</h2>
           <h4 className="ui horizontal divider header">
             <i className="tasks icon"></i>
-            Select Your Plan
+            Step 2: Select Your Plan
           </h4>
           <div className="ui three cards">
             <div className={this.state.plan === "1" ? "ui card selected" : "ui card"} onClick={this.selectCard} name="silver" data-id="1">
               <div className="content">
                 <div className="center aligned description">
-                  <img src={require('../../assets/img.png')} />
+                  <img src={require('../../assets/silver.png')} />
                 </div>
               </div>
               <div className="extra content">
@@ -220,7 +179,7 @@ class InjectedLanding extends React.Component {
             <div className={this.state.plan === "2" ? "ui card selected" : "ui card"} onClick={this.selectCard} name="gold" data-id="2">
               <div className="content">
                 <div className="center aligned description">
-                  <img src={require('../../assets/img.png')} />
+                  <img src={require('../../assets/gold.png')} />
                 </div>
               </div>
               <div className="extra content">
@@ -235,7 +194,7 @@ class InjectedLanding extends React.Component {
             <div className={this.state.plan === "3" ? "ui card selected" : "ui card"} onClick={this.selectCard} name="platinum" data-id="3">
               <div className="content">
                 <div className="center aligned description">
-                  <img src={require('../../assets/img.png')} />
+                  <img src={require('../../assets/platinum.png')} />
                 </div>
               </div>
               <div className="extra content">
@@ -250,7 +209,7 @@ class InjectedLanding extends React.Component {
           </div>
           <h4 className="ui horizontal divider header">
             <i className="credit card outline icon"></i>
-            Enter Card Details
+            Step 3: Enter Card Details
           </h4>
           <div className="field">
             <CardSection />
@@ -261,6 +220,11 @@ class InjectedLanding extends React.Component {
       </div>
     );
   }
+}
+
+const testEmail = (str) => {
+  const re = /^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i;
+  return !re.test(str) ;
 }
 
 const error = (
